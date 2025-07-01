@@ -1,0 +1,20 @@
+let
+    // 1. Fuente de datos
+    Source = #"02_Generador de períodos",
+
+    // 2. Ordenar por el campo Sort (opcional pero útil)
+    #"Sorted Rows" = Table.Sort(Source, {{"Sort", Order.Ascending}}),
+
+    // 3. Lista de períodos que se quieren conservar
+    PeriodosFiltrados = {
+        "Hoy", "Ayer", "Anteayer", "Esta semana", "Este mes",
+        "Este trimestre", "Este semestre", "Este año",
+        "Últimos 7 días", "Últimos 30 días", 
+        "Últimos 90 días", "Últimos 180 días", "Últimos 365 días"
+    },
+
+    // 4. Filtrar solo los períodos en la lista
+    #"Filtered Rows" = Table.SelectRows(#"Sorted Rows", each List.Contains(PeriodosFiltrados, [Período])),
+    #"Filas filtradas" = Table.SelectRows(#"Filtered Rows", each ([Sort] <> 1))
+in
+    #"Filas filtradas"

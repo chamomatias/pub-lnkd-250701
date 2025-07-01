@@ -1,0 +1,72 @@
+let
+    // 1. Cargar la tabla codificada (comparaciones de períodos)
+    Source = Table.FromRows(
+        Json.Document(
+            Binary.Decompress(
+                Binary.FromText(
+                    "lZjLahsxFIZfRXhVQyi2fJ2lC4UuWigkm2KyELESm3osd6Sk+FW66wN00Wfwi1X30eVInkJIpKOjf7785xw8yXY7mo7uRp/YRX7fXGgnfzywHbmgd2/8PfpGuaCd3I5NkomqPBWIvh7vtiPci2xOghKz9CLm9gf6zDqKLqG0umS17T1QfyYX119HcWgZRyu0u/4hXIbsCp07+nZgKvKZcKESyIUb2a/66JXb4BgQMomJFogxD2/PJp7DLVMQFc9JbHQMiZnUVA+EWYT3mx6mKcA0IEwDwDQRTKoHwizD+9N1T+PXKY4+yHlceAwKmuRME0RaRf4uF3213DorlzoA6mXDY1DQVizVBJHWcvGRC4I4bcmJyN29XqAz4WRH0J6owyNBz/Rpr44f9geOflL63TzlqCj1VjCJJOjYCFIraLJ4RRPEam5gPbH2fKSiCmRzhhDZVAayTCcZTLBDO3pE5PqXWZtzIk5aaraa7UJJVzWrPfCW5eqKlA3xbjqt2YWtMkdEdNffvtN6XqzX8vxF+xEr2YxYA8bANYz4IPcwYQI8LLDV3IM5Z64ILVVufKEcNttVtmUnsQ+azezTikoxC1TSg2nmRRrXpHWOrOshkHq/L2IEr1Lo9IBDl8nsy73eA+lSxcrDjVoW3cFKk6YNHmBis/EtHsi480AAfvyq+PggWujrG45BSEWvYLq1M1t0B3lJdFRVy63r/f3jlXTCvQNpKBdJK+nFTa6o68OkzSDStPfLjFn/34KszgKeQHiJbmEuIkZdZxcpz0YCa6oOPWmwwXh6w0/c66cjE/0G2G392GSqNi/Tg8HwrUKnZ4VpGuBzmfaGwzC5/8SQHzOuJ+7pkNkyF6LG9SHgnSBoBV7VhznnAzjTyaoRQm9UFcT6ZC0AuFi0MFcxoS64D1XfsLLBAp403Nxl3Uzs1dOpivmx34dvXNBYpXow1qqOlR4VZmqQx0XWurswt//EUplyvSmWw/WBLnPfpWDV9WN1zv+Wt6nwpDMDkWSzAqNUZ2Q2KT8Ya5m0t3qSs/tb0VUq1OkxyEmW9MCA/3E8/gM=",
+                    BinaryEncoding.Base64
+                ),
+                Compression.Deflate
+            )
+        ),
+        let _t = ((type text) meta [Serialized.Text = true]) in 
+        type table [
+            Sort = _t,
+            #"Período Actual" = _t,
+            #"Período Previo" = _t,
+            #"Current period (vs. previous period)" = _t,
+            #"Período actual (vs. período previo)#(lf)" = _t,
+            Column1 = _t, Column2 = _t, Column3 = _t, Column4 = _t, Column5 = _t
+        ]
+    ),
+
+    // 2. Hacer join con el generador de períodos para obtener la fecha de "Período Actual"
+    #"Merged Queries Current" = Table.NestedJoin(
+        Source,
+        {"Período Actual"},
+        #"02_Generador de períodos",
+        {"Período"},
+        "Calendar Ranges Generator",
+        JoinKind.LeftOuter
+    ),
+
+    #"Expanded Calendar Ranges Generator" = Table.ExpandTableColumn(
+        #"Merged Queries Current",
+        "Calendar Ranges Generator",
+        {"Date"},
+        {"Fecha Período Actual"}
+    ),
+
+    // 3. Hacer join con la fecha del "Período Previo"
+    #"Merged Queries Previous" = Table.NestedJoin(
+        #"Expanded Calendar Ranges Generator",
+        {"Período Previo"},
+        #"02_Generador de períodos",
+        {"Período"},
+        "Calendar Ranges Generator",
+        JoinKind.LeftOuter
+    ),
+
+    #"Expanded Calendar Ranges Generator1" = Table.ExpandTableColumn(
+        #"Merged Queries Previous",
+        "Calendar Ranges Generator",
+        {"Date"},
+        {"Fecha Período Previo"}
+    ),
+
+    // 4. Convertir Sort a tipo numérico
+    #"Changed Type" = Table.TransformColumnTypes(
+        #"Expanded Calendar Ranges Generator1",
+        {{"Sort", Int64.Type}}
+    ),
+
+    // 5. Filtrar períodos no deseados
+    #"Filtered Rows" = Table.SelectRows(
+        #"Changed Type",
+        each 
+            [#"Período actual (vs. período previo)#(lf)"] <> "Ayer (vs. Anteayer)" and 
+            [#"Período actual (vs. período previo)#(lf)"] <> "Hoy (vs. Ayer)"
+    )
+in
+    #"Filtered Rows"

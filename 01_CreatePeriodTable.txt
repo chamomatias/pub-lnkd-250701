@@ -1,0 +1,37 @@
+(
+    PeriodNameSpanish as text,
+    PeriodNameEnglish as text, 
+    StartDate as date, 
+    EndDate as date, 
+    SortOrder as number
+) as table =>
+
+let
+    // 1. Calcular la cantidad de días entre StartDate y EndDate
+    DayCount = Duration.Days(EndDate - StartDate) + 1,
+
+    // 2. Crear una lista de fechas desde StartDate con duración diaria
+    DateList = List.Dates(StartDate, DayCount, #duration(1,0,0,0)),
+
+    // 3. Transformar la lista en una lista de registros con los valores del período
+    AddPeriodName = List.Transform(DateList, 
+        each {
+            PeriodNameSpanish,       // Nombre del período en español
+            PeriodNameEnglish,       // Nombre del período en inglés
+            _,                       // Fecha actual en la iteración
+            SortOrder                // Orden de clasificación
+        }
+    ),
+
+    // 4. Crear una tabla con los campos definidos y los valores generados
+    CreateTable = #table(
+        type table[
+            PeriodNameSpanish = text,
+            PeriodNameEnglish = text,
+            Date = date,
+            Sort = number
+        ],
+        AddPeriodName
+    )
+in
+    CreateTable

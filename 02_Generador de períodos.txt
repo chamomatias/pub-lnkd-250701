@@ -1,0 +1,110 @@
+let
+    // 📅 Fechas base
+    FechaHoy = Date.From(DateTime.LocalNow()),
+    FechaAyer = FechaHoy - #duration(1,0,0,0),
+
+    // 📆 Semana actual
+    FechaInicioSemana = Date.StartOfWeek(FechaHoy, Day.Sunday),
+    FechaFinSemana = Date.EndOfWeek(FechaInicioSemana, Day.Sunday),
+
+    // 📆 Mes actual
+    FechaInicioMes = Date.StartOfMonth(FechaHoy),
+    FechaFinMes = Date.EndOfMonth(FechaHoy),
+
+    // 📆 Trimestre actual
+    FechaInicioTrimestre = Date.StartOfQuarter(FechaHoy),
+    FechaFinTrimestre = Date.EndOfQuarter(FechaHoy),
+
+    // 📆 Semestre actual (semestres de 2 trimestres)
+    FechaInicioSemestre = if Date.QuarterOfYear(FechaHoy) = 1 or Date.QuarterOfYear(FechaHoy) = 3 
+                          then Date.StartOfQuarter(FechaHoy) 
+                          else Date.StartOfMonth(Date.AddQuarters(Date.StartOfQuarter(FechaHoy), -1)),
+    
+    FechaFinSemestre = if Date.QuarterOfYear(FechaHoy) = 2 or Date.QuarterOfYear(FechaHoy) = 4 
+                       then Date.EndOfQuarter(FechaHoy) 
+                       else Date.EndOfMonth(Date.AddQuarters(Date.EndOfQuarter(FechaHoy), 1)),
+
+    // 📆 Año actual
+    FechaInicioAño = Date.StartOfYear(FechaHoy),
+    FechaFinAño = Date.EndOfYear(FechaHoy),
+
+    // 📆 Referencias pasadas
+    FechaInicioSemanaPasada = FechaInicioSemana - #duration(7,0,0,0),
+    FechaFinSemanaPasada = FechaFinSemana - #duration(7,0,0,0),
+    FechaInicioMesPasado = Date.AddMonths(FechaInicioMes, -1),
+    FechaFinMesPasado = Date.EndOfMonth(Date.AddMonths(FechaHoy, -1)),
+    FechaInicioTrimestrePasado = Date.AddQuarters(FechaInicioTrimestre, -1),
+    FechaFinTrimestrePasado = Date.EndOfMonth(Date.AddQuarters(FechaFinTrimestre, -1)),
+    FechaInicioSemestrePasado = Date.AddQuarters(FechaInicioSemestre, -2),
+    FechaFinSemestrePasado = Date.EndOfMonth(Date.AddQuarters(FechaFinSemestre, -2)),
+
+    // 🧩 Rango de períodos
+    Ranges = {
+        {"Hoy", "Today", FechaHoy, FechaHoy, 1},
+        {"Ayer", "Yesterday", FechaAyer, FechaAyer, 2},
+        {"Anteayer", "Before yesterday", FechaHoy - #duration(2,0,0,0), FechaHoy - #duration(2,0,0,0), 3},
+
+        {"Últimos 7 días", "Last 7 days", Date.AddDays(FechaAyer,-6), FechaAyer, 4},
+        {"7 días previos", "Previous 7 days", Date.AddDays(FechaAyer,-13), Date.AddDays(FechaAyer,-7), 5},
+        {"Últimos 30 días", "Last 30 days", Date.AddDays(FechaAyer,-29), FechaAyer, 6},
+        {"30 días previos", "Previous 30 days", Date.AddDays(FechaAyer,-59), Date.AddDays(FechaAyer,-30), 7},
+        {"Últimos 90 días", "Last 90 days", Date.AddDays(FechaAyer,-89), FechaAyer, 8},
+        {"90 días previos", "Previous 90 days", Date.AddDays(FechaAyer,-179), Date.AddDays(FechaAyer,-90), 9},
+        {"Últimos 180 días", "Last 180 days", Date.AddDays(FechaAyer,-179), FechaAyer, 10},
+        {"180 días previos", "Previous 180 days", Date.AddDays(FechaAyer,-359), Date.AddDays(FechaAyer,-180), 11},
+        {"Últimos 365 días", "Last 365 days", Date.AddDays(FechaAyer,-364), FechaAyer, 12},
+        {"365 días previos", "Previous 365 days", Date.AddDays(FechaAyer,-729), Date.AddDays(FechaAyer,-365), 13},
+
+        {"Esta semana", "This week", FechaInicioSemana, FechaHoy, 14},
+        {"Semana pasada hasta la fecha", "Last week to date", FechaInicioSemanaPasada, FechaHoy - #duration(7,0,0,0), 15},
+        {"Semana pasada completa", "Last week complete", FechaInicioSemanaPasada, FechaFinSemanaPasada, 16},
+        {"2 semanas atrás", "2 weeks ago", FechaInicioSemana - #duration(14,0,0,0), FechaFinSemana - #duration(14,0,0,0), 17},
+        {"Esta semana del año previo", "This week last year", Date.AddWeeks(FechaInicioSemana,-53), Date.AddWeeks(FechaHoy,-53), 18},
+        {"Semana pasada del año previo", "Last week last year", Date.AddWeeks(FechaInicioSemanaPasada,-53), Date.AddWeeks(FechaFinSemanaPasada,-53), 19},
+
+        {"Este mes", "This month", FechaInicioMes, FechaHoy, 20},
+        {"Mes pasado hasta la fecha", "Last month to date", FechaInicioMesPasado, Date.AddMonths(FechaHoy, -1), 21},
+        {"Mes pasado completo", "Last month complete", FechaInicioMesPasado, FechaFinMesPasado, 22},
+        {"2 meses atrás", "2 months ago", Date.AddMonths(FechaInicioMes, -2), Date.EndOfMonth(Date.AddMonths(FechaFinMes, -2)), 23},
+        {"Este mes del año previo", "This month last year", Date.AddYears(FechaInicioMes, -1), Date.AddYears(FechaHoy, -1), 24},
+        {"Mes pasado del año previo", "Last month last year", Date.AddYears(FechaInicioMesPasado, -1), Date.AddYears(FechaFinMesPasado, -1), 25},
+
+        {"Este trimestre", "This quarter", FechaInicioTrimestre, FechaHoy, 26},
+        {"Trimestre pasado hasta la fecha", "Last quarter to date", Date.AddQuarters(FechaInicioTrimestre, -1), Date.AddQuarters(FechaHoy, -1), 27},
+        {"Trimestre pasado completo", "Last quarter complete", FechaInicioTrimestrePasado, FechaFinTrimestrePasado, 28},
+        {"2 trimestres atrás", "2 quarters ago", Date.AddQuarters(FechaInicioTrimestre, -2), Date.EndOfMonth(Date.AddQuarters(FechaFinTrimestre, -2)), 29},
+        {"Este trimestre del año previo", "This quarter last year", Date.AddYears(FechaInicioTrimestre, -1), Date.AddYears(FechaHoy, -1), 30},
+        {"Trimestre pasado del año previo", "Last quarter last year", Date.AddYears(FechaInicioTrimestrePasado, -1), Date.EndOfMonth(Date.AddYears(FechaFinTrimestrePasado, -1)), 31},
+
+        {"Este semestre", "This semester", FechaInicioSemestre, FechaHoy, 32},
+        {"Semestre pasado", "Last semester", FechaInicioSemestrePasado, FechaFinSemestrePasado, 33},
+        {"Semestre pasado hasta la fecha", "Last semester to date", FechaInicioSemestrePasado, 
+            if Date.QuarterOfYear(FechaHoy) = 2 or Date.QuarterOfYear(FechaHoy) = 4 
+            then Date.AddQuarters(FechaHoy, -2) else Date.AddQuarters(FechaHoy, -1), 34},
+        {"Semestre pasado completo", "Last semester complete", FechaInicioSemestrePasado, Date.EndOfMonth(FechaFinSemestrePasado), 35},
+        {"2 semestres atrás", "2 semesters ago", Date.AddQuarters(FechaInicioSemestre, -4), Date.EndOfMonth(Date.AddQuarters(FechaFinSemestre, -4)), 36},
+        {"Este semestre del año previo", "This semester last year", Date.AddYears(FechaInicioSemestre, -1), Date.AddYears(FechaHoy, -1), 37},
+        {"Semestre pasado del año previo", "Last semester last year", Date.AddYears(FechaInicioSemestrePasado, -1), Date.EndOfMonth(Date.AddYears(FechaFinSemestrePasado, -1)), 38},
+
+        {"Este año", "This year", FechaInicioAño, FechaHoy, 39},
+        {"Año pasado completo", "Last year complete", Date.AddYears(FechaInicioAño, -1), Date.AddYears(FechaFinAño, -1), 40},
+        {"Año pasado hasta la fecha", "Last year to date", Date.AddYears(FechaInicioAño, -1), Date.AddYears(FechaHoy, -1), 41},
+        {"2 años atrás", "2 years ago", Date.StartOfYear(Date.AddYears(FechaHoy, -2)), Date.EndOfYear(Date.AddYears(FechaHoy, -2)), 42}
+    },
+
+    // 🧱 Generar tablas individuales por período
+    GetTables = List.Transform(Ranges, each #"01_CreatePeriodTable"(_{0}, _{1}, _{2}, _{3}, _{4})),
+
+    // 🧩 Combinar todas las tablas en una sola
+    Output = Table.Combine(GetTables),
+
+    // 🔠 Ordenar por código de período y fecha descendente
+    Ordenado = Table.Sort(Output, {{"Sort", Order.Ascending}, {"Date", Order.Descending}}),
+
+    // 🏷️ Renombrar columnas
+    Renombrado = Table.RenameColumns(Ordenado, {
+        {"PeriodNameSpanish", "Período"},
+        {"PeriodNameEnglish", "Period"}
+    })
+in
+    Renombrado
