@@ -1,3 +1,4 @@
+//02_Generador de períodos
 let
     // 📅 Fechas base
     FechaHoy = Date.From(DateTime.LocalNow()),

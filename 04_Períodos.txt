@@ -1,3 +1,4 @@
+//04_Períodos
 let
     // 1. Fuente de datos
     Source = #"02_Generador de períodos",
@@ -14,7 +15,6 @@ let
     },
 
     // 4. Filtrar solo los períodos en la lista
-    #"Filtered Rows" = Table.SelectRows(#"Sorted Rows", each List.Contains(PeriodosFiltrados, [Período])),
-    #"Filas filtradas" = Table.SelectRows(#"Filtered Rows", each ([Sort] <> 1))
+    #"Filtered Rows" = Table.SelectRows(#"Sorted Rows", each List.Contains(PeriodosFiltrados, [Período]))
 in
-    #"Filas filtradas"
+    #"Filtered Rows"

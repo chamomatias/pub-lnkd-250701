@@ -1,3 +1,4 @@
+//03_Comparación períodos
 let
     // 1. Cargar la tabla codificada (comparaciones de períodos)
     Source = Table.FromRows(
